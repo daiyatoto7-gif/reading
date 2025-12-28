@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>読書管理アプリ</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+            --border-radius: 8px;
+        }
+        body {
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding-bottom: 80px; /* Navigation height */
+        }
+        h2, h3 { margin-top: 0; }
+        
+        /* Navigation Tabs */
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .nav-item {
+            text-align: center;
+            cursor: pointer;
+            flex: 1;
+            padding: 5px;
+            color: #888;
+            font-size: 14px;
+        }
+        .nav-item.active {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        /* Page Content */
+        .page {
+            display: none;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .page.active { display: block; }
+
+        /* Forms & Inputs */
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        button:hover { opacity: 0.9; }
+        button.secondary { background-color: #999; margin-top: 5px; }
+        button.danger { background-color: #e74c3c; margin-top: 5px; }
+
+        /* Utility Classes */
+        .hidden { display: none; }
+        .flex { display: flex; gap: 10px; }
+        .text-small { font-size: 12px; color: #666; }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: white;
+            margin-left: 10px;
+        }
+        .status-unread { background-color: #95a5a6; }
+        .status-reading { background-color: #3498db; }
+        .status-completed { background-color: #2ecc71; }
+        .status-dropped { background-color: #e74c3c; }
+
+        /* Bookshelf List */
+        .book-item {
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+            cursor: pointer;
+        }
+        .book-item:last-child { border-bottom: none; }
+        
+        /* Stats Charts */
+        canvas {
+            max-width: 100%;
+            margin-bottom: 20px;
+        }
+
+        /* Calendar (Gantt style) */
+        .gantt-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .gantt-row {
+            display: flex;
+            align-items: center;
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .gantt-label {
+            width: 30%;
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .gantt-bar-container {
+            flex: 1;
+            background: #eee;
+            height: 20px;
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .gantt-bar {
+            position: absolute;
+            height: 100%;
+            background-color: var(--primary-color);
+            opacity: 0.7;
+        }
+        .gantt-date-info {
+            font-size: 10px;
+            color: #666;
+            text-align: right;
+            margin-left: 5px;
+        }
+
+        /* Memo History */
+        .memo-history {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .memo-item {
+            border-bottom: 1px solid #ddd;
+            padding: 5px 0;
+            font-size: 13px;
+        }
+        .memo-date { font-weight: bold; color: #555; }
+    </style>
+</head>
+<body>
+
+    <div id="tab-record" class="page active">
+        <h2>記録をつける</h2>
+        
+        <div class="card">
+            <h3>メニュー</h3>
+            <div class="flex">
+                <button onclick="showRecordSection('add-new')">新しい本を追加</button>
+                <button onclick="showRecordSection('log-reading')">読書記録をつける</button>
+            </div>
+            <div style="margin-top: 10px;">
+                <button class="secondary" onclick="showRecordSection('change-status')">ステータスを変更・編集</button>
+            </div>
+        </div>
+
+        <div id="section-add-new" class="card hidden">
+            <h3>新しい本を追加</h3>
+            <label>タイトル (必須)</label>
+            <input type="text" id="new-title" placeholder="本のタイトル">
+            
+            <label>読み始めた日 (自動入力可)</label>
+            <input type="date" id="new-start-date">
+            
+            <label>今回読んだ日付 (任意)</label>
+            <input type="date" id="new-log-date">
+            
+            <label>どこまで読んだか (ページ数)</label>
+            <input type="number" id="new-page" placeholder="例: 50">
+            
+            <label>読み終えた日 (読了時のみ)</label>
+            <input type="date" id="new-finish-date">
+            
+            <label>メモ</label>
+            <textarea id="new-memo" placeholder="感想など"></textarea>
+            
+            <button onclick="addNewBook()">追加する</button>
+        </div>
+
+        <div id="section-log-reading" class="card hidden">
+            <h3>読書記録をつける</h3>
+            <p class="text-small">未読または読書中の本のみ表示されます</p>
+            <select id="log-book-select" onchange="updateCurrentPageDisplay()"></select>
+            
+            <p id="current-page-display" class="text-small" style="font-weight:bold; color:var(--primary-color);">現在: 0ページ</p>
+
+            <label>読んだ日付</label>
+            <input type="date" id="log-date">
+            
+            <label>どこまで読んだか (ページ数)</label>
+            <input type="number" id="log-page">
+            
+            <label>メモ</label>
+            <textarea id="log-memo" placeholder="今日の感想"></textarea>
+            
+            <button onclick="addLog()">記録する</button>
+            
+            <div class="flex" style="margin-top:10px;">
+                <button class="secondary" onclick="finishBookFromLog()">読了する</button>
+                <button class="danger" onclick="dropBookFromLog()">離脱する</button>
+            </div>
+        </div>
+
+        <div id="section-change-status" class="card hidden">
+            <h3>ステータスを変更・編集</h3>
+            <input type="text" id="status-search" placeholder="本の名前で検索..." onkeyup="renderStatusList()">
+            <div id="status-book-list"></div>
+        </div>
+    </div>
+
+    <div id="tab-bookshelf" class="page">
+        <h2>本を選択（本棚）</h2>
+        <div class="flex" style="margin-bottom: 15px;">
+            <button class="secondary" onclick="renderBookshelf('reading')">読書中</button>
+            <button class="secondary" onclick="renderBookshelf('all')">すべて</button>
+            <button class="secondary" onclick="renderBookshelf('unread')">未読</button>
+            <button class="secondary" onclick="renderBookshelf('dropped')">離脱</button>
+        </div>
+        <div id="bookshelf-list" class="card"></div>
+    </div>
+
+    <div id="edit-screen" class="page">
+        <button class="secondary" onclick="closeEditScreen()">← 戻る</button>
+        <h2>詳細編集</h2>
+        <div class="card">
+            <input type="hidden" id="edit-id">
+            <label>タイトル</label>
+            <input type="text" id="edit-title">
+            
+            <label>ステータス</label>
+            <select id="edit-status">
+                <option value="unread">未読</option>
+                <option value="reading">読書中</option>
+                <option value="completed">読了</option>
+                <option value="dropped">離脱中</option>
+            </select>
+
+            <label>読み始めた日</label>
+            <input type="date" id="edit-start-date">
+
+            <label>現在の到達ページ</label>
+            <input type="number" id="edit-current-page">
+
+            <label>読み終えた日</label>
+            <input type="date" id="edit-finish-date">
+
+            <label>過去のメモ履歴</label>
+            <div id="edit-memo-history" class="memo-history"></div>
+
+            <button onclick="saveEdit()" style="margin-top:20px;">変更を保存</button>
+            <button class="danger" onclick="deleteBook()" style="margin-top:10px;">この本を削除</button>
+        </div>
+    </div>
+
+    <div id="tab-calendar" class="page">
+        <h2>読書カレンダー</h2>
+        <p class="text-small">直近3ヶ月以内の読書期間を表示（離脱中を除く）</p>
+        <div id="gantt-container" class="gantt-chart"></div>
+    </div>
+
+    <div id="tab-stats" class="page">
+        <h2>統計情報</h2>
+        <div class="card">
+            <p><strong>累計読了冊数:</strong> <span id="stat-total-completed">0</span> 冊</p>
+            <p><strong>累計読書日数:</strong> <span id="stat-total-days">0</span> 日</p>
+            <p><strong>累計ページ数:</strong> <span id="stat-total-pages">0</span> ページ</p>
+            <p><strong>連続読書日数:</strong> <span id="stat-streak">0</span> 日</p>
+            <p><strong>1日平均ページ:</strong> <span id="stat-avg-daily-page">0</span> ページ</p>
+            <p><strong>1冊平均読了日数:</strong> <span id="stat-avg-days-book">0</span> 日</p>
+        </div>
+        <div class="card">
+            <h3>月別読了冊数</h3>
+            <canvas id="chart-monthly-books"></canvas>
+        </div>
+        <div class="card">
+            <h3>日別読書ページ数</h3>
+            <canvas id="chart-daily-pages"></canvas>
+        </div>
+    </div>
+
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="switchTab('record')">記録</div>
+        <div class="nav-item" onclick="switchTab('bookshelf')">本を選択</div>
+        <div class="nav-item" onclick="switchTab('calendar')">カレンダー</div>
+        <div class="nav-item" onclick="switchTab('stats')">統計</div>
+    </div>
+
+    <script>
+        // --- Data Structure & Initialization ---
+        // Book Object Structure:
+        // {
+        //   id: timestamp,
+        //   title: string,
+        //   status: 'unread' | 'reading' | 'completed' | 'dropped',
+        //   startDate: string (YYYY-MM-DD),
+        //   finishDate: string (YYYY-MM-DD),
+        //   logs: [ { date: string, page: number, memo: string } ]
+        // }
+
+        let books = JSON.parse(localStorage.getItem('readingApp_books')) || [];
+
+        function saveData() {
+            localStorage.setItem('readingApp_books', JSON.stringify(books));
+        }
+
+        // --- Tab Switching ---
+        function switchTab(tabName) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+            // Show selected page
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            // Update nav active state
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            // Find the nav item that calls this function (rough matching)
+            const navIndex = ['record', 'bookshelf', 'calendar', 'stats'].indexOf(tabName);
+            if(navIndex >= 0) document.querySelectorAll('.nav-item')[navIndex].classList.add('active');
+
+            // Refresh content based on tab
+            if(tabName === 'record') resetRecordForms();
+            if(tabName === 'bookshelf') renderBookshelf('all');
+            if(tabName === 'calendar') renderCalendar();
+            if(tabName === 'stats') renderStats();
+        }
+
+        // --- Record Tab Logic ---
+        function showRecordSection(section) {
+            document.getElementById('section-add-new').classList.add('hidden');
+            document.getElementById('section-log-reading').classList.add('hidden');
+            document.getElementById('section-change-status').classList.add('hidden');
+            
+            document.getElementById(`section-${section}`).classList.remove('hidden');
+
+            if(section === 'log-reading') populateLogSelect();
+            if(section === 'change-status') renderStatusList();
+        }
+
+        function resetRecordForms() {
+            // Sets dates to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('new-log-date').value = today;
+            document.getElementById('log-date').value = today;
+        }
+
+        // 1. Add New Book
+        function addNewBook() {
+            const title = document.getElementById('new-title').value;
+            if(!title) return alert("タイトルは必須です");
+
+            const startDate = document.getElementById('new-start-date').value;
+            const logDate = document.getElementById('new-log-date').value;
+            const page = parseInt(document.getElementById('new-page').value) || 0;
+            const finishDate = document.getElementById('new-finish-date').value;
+            const memo = document.getElementById('new-memo').value;
+
+            const newBook = {
+                id: Date.now(),
+                title: title,
+                status: 'unread',
+                startDate: startDate || '',
+                finishDate: finishDate || '',
+                logs: []
+            };
+
+            // Logic: If log entered, auto-set logic
+            if(logDate || page > 0) {
+                // If startDate empty, fill with logDate
+                if(!newBook.startDate && logDate) newBook.startDate = logDate;
+                
+                newBook.status = 'reading';
+                if(finishDate) newBook.status = 'completed';
+
+                newBook.logs.push({
+                    date: logDate || new Date().toISOString().split('T')[0],
+                    page: page,
+                    memo: memo
+                });
+            }
+
+            books.push(newBook);
+            saveData();
+            alert("本を追加しました");
+            
+            // Reset fields
+            document.getElementById('new-title').value = '';
+            document.getElementById('new-page').value = '';
+            document.getElementById('new-memo').value = '';
+            showRecordSection('log-reading'); // Move to log screen
+        }
+
+        // 2. Log Reading
+        function populateLogSelect() {
+            const select = document.getElementById('log-book-select');
+            select.innerHTML = '<option value="">本を選択してください</option>';
+            
+            // Filter: Unread or Reading only
+            const activeBooks = books.filter(b => b.status === 'unread' || b.status === 'reading');
+            
+            activeBooks.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b.id;
+                opt.textContent = b.title;
+                select.appendChild(opt);
+            });
+        }
+
+        function updateCurrentPageDisplay() {
+            const bookId = document.getElementById('log-book-select').value;
+            const display = document.getElementById('current-page-display');
+            if(!bookId) {
+                display.innerText = "現在: - ページ";
+                return;
+            }
+            const book = books.find(b => b.id == bookId);
+            const maxPage = book.logs.length > 0 ? book.logs[book.logs.length - 1].page : 0;
+            display.innerText = `現在: ${maxPage} ページ`;
+        }
+
+        function addLog() {
+            const bookId = document.getElementById('log-book-select').value;
+            if(!bookId) return alert("本を選択してください");
+            
+            const date = document.getElementById('log-date').value;
+            const page = parseInt(document.getElementById('log-page').value);
+            const memo = document.getElementById('log-memo').value;
+
+            if(!date || isNaN(page)) return alert("日付とページ数は必須です");
+
+            const bookIndex = books.findIndex(b => b.id == bookId);
+            const book = books[bookIndex];
+
+            // Validation: New page < current page
+            const currentPage = book.logs.length > 0 ? book.logs[book.logs.length - 1].page : 0;
+            if(page < currentPage) {
+                alert(`エラー: ページ数が減っています（現在: ${currentPage}）。\n記録修正が必要な場合は「ステータスを変更」から編集してください。`);
+                return;
+            }
+
+            // Logic: Unread -> Reading & Start Date auto-fill
+            if(book.status === 'unread') {
+                book.status = 'reading';
+                if(!book.startDate) book.startDate = date;
+            }
+
+            book.logs.push({ date, page, memo });
+            // Sort logs by date to keep order
+            book.logs.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+            saveData();
+            alert("記録しました");
+            document.getElementById('log-memo').value = ''; // clear memo
+            document.getElementById('log-page').value = '';
+            updateCurrentPageDisplay();
+        }
+
+        function finishBookFromLog() {
+            const bookId = document.getElementById('log-book-select').value;
+            if(!bookId) return alert("本を選択してください");
+            const date = document.getElementById('log-date').value;
+            
+            const book = books.find(b => b.id == bookId);
+            book.status = 'completed';
+            book.finishDate = date || new Date().toISOString().split('T')[0];
+            saveData();
+            alert("「読了」に変更しました");
+            populateLogSelect(); // Remove from list
+        }
+
+        function dropBookFromLog() {
+            const bookId = document.getElementById('log-book-select').value;
+            if(!bookId) return alert("本を選択してください");
+            
+            const book = books.find(b => b.id == bookId);
+            book.status = 'dropped';
+            saveData();
+            alert("「離脱」に変更しました");
+            populateLogSelect(); // Remove from list
+        }
+
+        // 3. Change Status / Edit List
+        function renderStatusList() {
+            const container = document.getElementById('status-book-list');
+            const search = document.getElementById('status-search').value.toLowerCase();
+            container.innerHTML = '';
+
+            const filtered = books.filter(b => b.title.toLowerCase().includes(search));
+
+            filtered.forEach(b => {
+                const div = document.createElement('div');
+                div.className = 'book-item flex';
+                div.style.justifyContent = 'space-between';
+                div.innerHTML = `
+                    <span>${b.title} <span class="status-badge status-${b.status}">${getStatusLabel(b.status)}</span></span>
+                    <button class="secondary" style="width:auto; padding:5px 10px;" onclick="openEditScreen(${b.id})">編集</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // --- Bookshelf Tab Logic ---
+        function renderBookshelf(filterStatus) {
+            const list = document.getElementById('bookshelf-list');
+            list.innerHTML = '';
+            
+            let filtered = books;
+            if(filterStatus !== 'all') {
+                filtered = books.filter(b => b.status === filterStatus);
+            }
+
+            if(filtered.length === 0) {
+                list.innerHTML = '<p style="text-align:center; color:#999;">本がありません</p>';
+                return;
+            }
+
+            filtered.forEach(b => {
+                const div = document.createElement('div');
+                div.className = 'book-item';
+                div.innerHTML = `
+                    <div class="flex" style="justify-content:space-between; align-items:center;">
+                        <div>
+                            <strong>${b.title}</strong>
+                            <span class="status-badge status-${b.status}">${getStatusLabel(b.status)}</span>
+                            <div class="text-small">開始: ${b.startDate || '-'} / 完了: ${b.finishDate || '-'}</div>
+                        </div>
+                        <button class="secondary" style="width:auto;" onclick="openEditScreen(${b.id})">編集</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function getStatusLabel(status) {
+            const map = { unread:'未読', reading:'読書中', completed:'読了', dropped:'離脱' };
+            return map[status] || status;
+        }
+
+        // --- Edit Screen (Shared) ---
+        function openEditScreen(id) {
+            const book = books.find(b => b.id == id);
+            if(!book) return;
+
+            document.getElementById('edit-id').value = book.id;
+            document.getElementById('edit-title').value = book.title;
+            document.getElementById('edit-status').value = book.status;
+            document.getElementById('edit-start-date').value = book.startDate;
+            document.getElementById('edit-finish-date').value = book.finishDate;
+            
+            // Get current max page
+            const currentP = book.logs.length > 0 ? book.logs[book.logs.length - 1].page : 0;
+            document.getElementById('edit-current-page').value = currentP;
+
+            // Render Memo History
+            const historyDiv = document.getElementById('edit-memo-history');
+            historyDiv.innerHTML = '';
+            // Sort logs reverse chrono for viewing
+            const sortedLogs = [...book.logs].sort((a,b) => new Date(b.date) - new Date(a.date));
+            sortedLogs.forEach(log => {
+                if(log.memo) {
+                    const d = document.createElement('div');
+                    d.className = 'memo-item';
+                    d.innerHTML = `<span class="memo-date">${log.date} (${log.page}p):</span> ${log.memo}`;
+                    historyDiv.appendChild(d);
+                }
+            });
+
+            // Show Edit Screen (Overlay)
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('edit-screen').classList.add('active');
+        }
+
+        function closeEditScreen() {
+            document.getElementById('edit-screen').classList.remove('active');
+            // Go back to Bookshelf by default
+            switchTab('bookshelf');
+        }
+
+        function saveEdit() {
+            const id = document.getElementById('edit-id').value;
+            const book = books.find(b => b.id == id);
+
+            book.title = document.getElementById('edit-title').value;
+            book.status = document.getElementById('edit-status').value;
+            book.startDate = document.getElementById('edit-start-date').value;
+            book.finishDate = document.getElementById('edit-finish-date').value;
+
+            // Handle Page Count Edit (Rough approach: Update the LAST log, or create one)
+            const inputPage = parseInt(document.getElementById('edit-current-page').value);
+            if(book.logs.length > 0) {
+                // Update last log's page count
+                book.logs[book.logs.length - 1].page = inputPage;
+            } else if (inputPage > 0) {
+                book.logs.push({ date: new Date().toISOString().split('T')[0], page: inputPage, memo: '' });
+            }
+
+            saveData();
+            alert("変更を保存しました");
+            closeEditScreen();
+        }
+
+        function deleteBook() {
+            if(!confirm("本当にこの本を削除しますか？データは復元できません。")) return;
+            const id = document.getElementById('edit-id').value;
+            books = books.filter(b => b.id != id);
+            saveData();
+            closeEditScreen();
+        }
+
+        // --- Calendar Tab Logic (Gantt) ---
+        function renderCalendar() {
+            const container = document.getElementById('gantt-container');
+            container.innerHTML = '';
+            
+            // Filter: No Dropped, Only books with startDate
+            const displayBooks = books.filter(b => b.status !== 'dropped' && b.startDate);
+            
+            // Sort by start date
+            displayBooks.sort((a,b) => new Date(a.startDate) - new Date(b.startDate));
+
+            if(displayBooks.length === 0) {
+                container.innerHTML = '<p>表示できる読書データがありません。</p>';
+                return;
+            }
+
+            // Determine Timeline Range (Min Start Date to Max End Date/Today)
+            const today = new Date();
+            let minDate = new Date(today); 
+            minDate.setMonth(minDate.getMonth() - 3); // Default view: last 3 months
+            
+            const maxDate = new Date(today);
+
+            const oneDay = 24 * 60 * 60 * 1000;
+            const totalDays = Math.ceil((maxDate - minDate) / oneDay);
+
+            displayBooks.forEach(b => {
+                const start = new Date(b.startDate);
+                let end = b.finishDate ? new Date(b.finishDate) : new Date();
+                
+                // If book started before view range, clip it for visuals (optional)
+                // If book ends after today (not possible logically but safe check)
+                
+                // Calculate position percentage
+                let startDiff = Math.ceil((start - minDate) / oneDay);
+                let duration = Math.ceil((end - start) / oneDay);
+                
+                // Normalize for view
+                if (startDiff < 0) {
+                    duration += startDiff; // Shorten bar
+                    startDiff = 0;
+                }
+                if (duration < 1) duration = 1;
+
+                const leftPercent = (startDiff / totalDays) * 100;
+                const widthPercent = (duration / totalDays) * 100;
+
+                // Only show if visible in range
+                if(leftPercent + widthPercent > 0 && leftPercent < 100) {
+                    const row = document.createElement('div');
+                    row.className = 'gantt-row';
+                    row.innerHTML = `
+                        <div class="gantt-label">${b.title}</div>
+                        <div class="gantt-bar-container">
+                            <div class="gantt-bar" style="left: ${leftPercent}%; width: ${widthPercent}%;"></div>
+                        </div>
+                        <div class="gantt-date-info">${b.startDate.slice(5)} ~ ${b.finishDate ? b.finishDate.slice(5) : '現在'}</div>
+                    `;
+                    container.appendChild(row);
+                }
+            });
+        }
+
+        // --- Statistics Tab Logic ---
+        let monthlyChartInstance = null;
+        let dailyChartInstance = null;
+
+        function renderStats() {
+            // 1. Calculate Aggregates
+            const completedBooks = books.filter(b => b.status === 'completed');
+            const totalCompleted = completedBooks.length;
+            
+            let totalPages = 0;
+            let totalReadingDays = new Set(); // Using Set to count unique YYYY-MM-DD
+            
+            // Aggregate all logs
+            books.forEach(b => {
+                if(b.logs.length > 0) {
+                    // Total pages = sum of max page of each book
+                    const maxP = Math.max(...b.logs.map(l => l.page));
+                    totalPages += maxP;
+                    
+                    b.logs.forEach(l => {
+                        if(l.date) totalReadingDays.add(l.date);
+                    });
+                }
+            });
+
+            // Streak Calculation
+            const sortedDays = Array.from(totalReadingDays).sort();
+            let streak = 0;
+            let currentStreak = 0;
+            if(sortedDays.length > 0) {
+                // Check backwards from today? Or just max streak ever? 
+                // Usually "current streak" implies leading up to today. 
+                // Let's do Max Streak logic for simplicity or Current Streak if requested.
+                // Request says "連続読書の日数" -> Usually current.
+                // Let's calculate the streak ending today/yesterday.
+                
+                const todayStr = new Date().toISOString().split('T')[0];
+                const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+                const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+                // Simple iteration
+                let tempStreak = 1;
+                for(let i=1; i<sortedDays.length; i++) {
+                    const prev = new Date(sortedDays[i-1]);
+                    const curr = new Date(sortedDays[i]);
+                    const diff = (curr - prev) / (1000 * 60 * 60 * 24);
+                    
+                    if(diff === 1) {
+                        tempStreak++;
+                    } else {
+                        tempStreak = 1;
+                    }
+                }
+                // If the last date in sortedDays is today or yesterday, use tempStreak, else 0
+                const lastRecord = sortedDays[sortedDays.length-1];
+                if(lastRecord === todayStr || lastRecord === yesterdayStr) {
+                    streak = tempStreak;
+                } else {
+                    streak = 0;
+                }
+            }
+
+            // Averages
+            const totalDaysCount = totalReadingDays.size;
+            const avgDailyPage = totalDaysCount > 0 ? Math.round(totalPages / totalDaysCount) : 0;
+            
+            let totalDaysToFinish = 0;
+            completedBooks.forEach(b => {
+                const s = new Date(b.startDate);
+                const e = new Date(b.finishDate);
+                const d = Math.max(1, Math.ceil((e - s) / (1000 * 60 * 60 * 24)) + 1);
+                totalDaysToFinish += d;
+            });
+            const avgDaysBook = totalCompleted > 0 ? Math.round(totalDaysToFinish / totalCompleted) : 0;
+
+            // DOM Updates
+            document.getElementById('stat-total-completed').innerText = totalCompleted;
+            document.getElementById('stat-total-days').innerText = totalDaysCount;
+            document.getElementById('stat-total-pages').innerText = totalPages;
+            document.getElementById('stat-streak').innerText = streak;
+            document.getElementById('stat-avg-daily-page').innerText = avgDailyPage;
+            document.getElementById('stat-avg-days-book').innerText = avgDaysBook;
+
+            // 2. Charts
+            renderCharts(completedBooks, sortedDays);
+        }
+
+        function renderCharts(completedBooks, allLogDates) {
+            // Chart 1: Monthly Completed Books
+            const monthlyCounts = {};
+            completedBooks.forEach(b => {
+                if(b.finishDate) {
+                    const month = b.finishDate.slice(0, 7); // YYYY-MM
+                    monthlyCounts[month] = (monthlyCounts[month] || 0) + 1;
+                }
+            });
+            const monthLabels = Object.keys(monthlyCounts).sort();
+            const monthData = monthLabels.map(m => monthlyCounts[m]);
+
+            const ctx1 = document.getElementById('chart-monthly-books').getContext('2d');
+            if(monthlyChartInstance) monthlyChartInstance.destroy();
+            monthlyChartInstance = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: monthLabels,
+                    datasets: [{
+                        label: '読了冊数',
+                        data: monthData,
+                        borderColor: '#2ecc71',
+                        tension: 0.1
+                    }]
+                }
+            });
+
+            // Chart 2: Daily Pages (Last 30 entries effectively or logic to sum pages per day)
+            // Need to sum pages read per day.
+            // Complex logic: Page is cumulative in logs. 
+            // We need Diff calculation: Day's Page - Previous Day's Page of SAME book.
+            // Simplified approach for this demo: 
+            // We just look at the raw growth of cumulative pages is hard.
+            // Alternative: Plot total pages read (sum of max pages of all books) growing over time? 
+            // Request: "1日毎の読書ページ数の推移" -> Daily Delta.
+            
+            const dailyPageSum = {};
+            // Re-scan logs to find daily delta is heavy. 
+            // Simplified Approximation: Use the "Page" entered in log as "Total done".
+            // To get daily delta accurately requires knowing previous log of THAT book.
+            
+            books.forEach(b => {
+                b.logs.forEach((log, index) => {
+                    const prevPage = index > 0 ? b.logs[index-1].page : 0;
+                    const delta = log.page - prevPage;
+                    if(delta > 0) {
+                        dailyPageSum[log.date] = (dailyPageSum[log.date] || 0) + delta;
+                    }
+                });
+            });
+
+            const dayLabels = Object.keys(dailyPageSum).sort();
+            const dayData = dayLabels.map(d => dailyPageSum[d]);
+
+            const ctx2 = document.getElementById('chart-daily-pages').getContext('2d');
+            if(dailyChartInstance) dailyChartInstance.destroy();
+            dailyChartInstance = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: dayLabels,
+                    datasets: [{
+                        label: 'ページ数',
+                        data: dayData,
+                        borderColor: '#4A90E2',
+                        tension: 0.1
+                    }]
+                }
+            });
+        }
+
+        // Initialize
+        resetRecordForms();
+        populateLogSelect();
+    </script>
+</body>
+</html>
