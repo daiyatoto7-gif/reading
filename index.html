@@ -7,21 +7,18 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            /* Modern Dark Theme Palette */
-            --bg-color: #0f172a;       /* Very dark slate */
-            --card-bg: #1e293b;        /* Slate 800 */
-            --card-bg-hover: #334155;
-            --text-main: #f1f5f9;      /* Slate 100 */
-            --text-sub: #94a3b8;       /* Slate 400 */
+            /* Theme Colors */
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f1f5f9;
+            --text-sub: #94a3b8;
             
-            --primary-color: #38bdf8;  /* Sky 400 */
-            --primary-hover: #0ea5e9;
-            --accent-color: #818cf8;   /* Indigo 400 */
-            
+            --primary-color: #38bdf8;
+            --accent-color: #818cf8;
             --border-color: #334155;
             --input-bg: #020617;
             
-            /* Status Colors (Pastel/Muted) */
+            /* Status Colors */
             --status-unread: #64748b;
             --status-reading: #22c55e;
             --status-completed: #3b82f6;
@@ -71,7 +68,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Cards */
         .card {
             background: var(--card-bg);
             padding: 20px;
@@ -108,6 +104,29 @@
         }
         textarea { resize: vertical; min-height: 80px; }
 
+        /* Type Toggle (Radio-like buttons) */
+        .type-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .type-option {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            background: var(--input-bg);
+            color: var(--text-sub);
+            font-weight: bold;
+        }
+        .type-option.active {
+            background: var(--primary-color);
+            color: #0f172a;
+            border-color: var(--primary-color);
+        }
+
         /* Buttons */
         button {
             background-color: var(--primary-color);
@@ -127,30 +146,36 @@
             border: 1px solid var(--border-color);
             color: var(--text-sub);
         }
-        
-        /* Filter Buttons (Bookshelf) */
+        button.danger {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+
+        /* Filter Buttons */
+        .filter-group {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            white-space: nowrap;
+        }
         .filter-btn {
             background-color: transparent;
             border: 1px solid var(--border-color);
             color: var(--text-sub);
             margin: 0;
             width: auto;
-            padding: 8px 15px;
-            border-radius: 20px; /* Pill shape */
-            font-size: 0.85rem;
-            white-space: nowrap;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
         }
         .filter-btn.active {
             background-color: var(--primary-color);
             color: #0f172a;
             border-color: var(--primary-color);
             font-weight: bold;
-        }
-
-        button.danger {
-            background-color: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            border: 1px solid #ef4444;
         }
 
         /* Navigation */
@@ -176,23 +201,16 @@
             color: var(--text-sub);
             cursor: pointer;
             padding: 5px;
-            transition: color 0.2s;
         }
-        .nav-item.active {
-            color: var(--primary-color);
-        }
-        .nav-icon {
-            font-size: 20px;
-            display: block;
-            margin-bottom: 2px;
-        }
+        .nav-item.active { color: var(--primary-color); }
+        .nav-icon { font-size: 20px; display: block; margin-bottom: 2px; }
 
         /* Utility */
         .hidden { display: none !important; }
         .flex { display: flex; gap: 10px; }
         .text-small { font-size: 0.8rem; color: var(--text-sub); }
 
-        /* Book Item List */
+        /* Book Item */
         .book-item {
             display: flex;
             justify-content: space-between;
@@ -200,7 +218,6 @@
             padding: 12px 0;
             border-bottom: 1px solid var(--border-color);
         }
-        .book-item:last-child { border-bottom: none; }
         .book-info { flex: 1; }
         .book-title { font-weight: bold; display: block; margin-bottom: 4px; }
         
@@ -212,105 +229,47 @@
             vertical-align: middle;
             margin-left: 5px;
         }
+        .type-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #475569;
+            color: #fff;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
         .status-unread { background: var(--status-unread); }
         .status-reading { background: var(--status-reading); }
         .status-completed { background: var(--status-completed); }
         .status-dropped { background: var(--status-dropped); }
 
-        /* --- Calendar Styles --- */
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .calendar-month-title {
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-
+        /* Calendar */
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-month-title { font-weight: bold; font-size: 1.1rem; }
         .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 1px;
-            background-color: var(--border-color);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            overflow: hidden;
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px;
+            background-color: var(--border-color); border: 1px solid var(--border-color);
+            border-radius: 8px; overflow: hidden;
         }
-
-        .calendar-day-header {
-            background-color: var(--card-bg);
-            color: var(--text-sub);
-            font-size: 10px;
-            text-align: center;
-            padding: 8px 0;
-        }
-
-        .calendar-cell {
-            background-color: var(--card-bg);
-            position: relative;
-            height: 100px;
-            overflow: hidden; 
-            /* No padding to ensure bars touch edges */
-        }
-        
-        .day-number {
-            position: absolute;
-            top: 4px;
-            left: 4px;
-            font-size: 10px;
-            color: var(--text-sub);
-            z-index: 2;
-        }
-        .today .day-number {
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-        .today {
-            background-color: rgba(56, 189, 248, 0.05);
-        }
-
-        /* Event Bars Logic */
+        .calendar-day-header { background-color: var(--card-bg); color: var(--text-sub); font-size: 10px; text-align: center; padding: 8px 0; }
+        .calendar-cell { background-color: var(--card-bg); position: relative; height: 100px; overflow: hidden; }
+        .day-number { position: absolute; top: 4px; left: 4px; font-size: 10px; color: var(--text-sub); z-index: 2; }
+        .today .day-number { color: var(--primary-color); font-weight: bold; }
+        .today { background-color: rgba(56, 189, 248, 0.05); }
         .event-bar {
-            position: absolute;
-            height: 16px;
-            font-size: 9px;
-            line-height: 16px;
-            color: #1e293b; 
-            font-weight: 700;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            padding: 0 4px;
-            z-index: 1;
-            
-            /* RESET visual breaks for continuity */
-            border-radius: 0;
-            box-shadow: none;
-            width: 100%; 
-            left: 0;
-            margin: 0;
+            position: absolute; height: 16px; font-size: 9px; line-height: 16px;
+            color: #1e293b; font-weight: 700; white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis; padding: 0 4px; z-index: 1;
+            border-radius: 0; width: 100%; left: 0; margin: 0;
         }
-        
-        /* Charts */
-        canvas { max-width: 100%; height: auto; }
-        
-        /* Memo History */
-        .memo-history {
-            background: var(--input-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 10px;
-            max-height: 150px;
-            overflow-y: auto;
-            margin-top: 10px;
-        }
-        .memo-item {
-            font-size: 12px;
-            padding: 8px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
+
+        /* Charts & Stats */
+        canvas { max-width: 100%; height: auto; margin-bottom: 20px; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px; }
+        .stat-item h3 { font-size: 0.8rem; margin-bottom: 0; }
+        .stat-val { font-size: 1.2rem; font-weight: bold; }
+        .stat-unit { font-size: 0.8rem; font-weight: normal; color: var(--text-sub); }
+
     </style>
 </head>
 <body>
@@ -318,7 +277,6 @@
     <div id="tab-record" class="page active">
         <h2>読書を記録</h2>
         <div class="card">
-            <h3>アクション</h3>
             <div class="flex">
                 <button onclick="showRecordSection('add-new')">新規追加</button>
                 <button onclick="showRecordSection('log-reading')">記録する</button>
@@ -328,45 +286,63 @@
 
         <div id="section-add-new" class="card hidden">
             <h3>新しい本を登録</h3>
+            
+            <label>形式</label>
+            <div class="type-toggle">
+                <div class="type-option active" id="type-opt-book" onclick="setNewBookType('book')">📖 読む</div>
+                <div class="type-option" id="type-opt-audio" onclick="setNewBookType('audio')">🎧 聴く</div>
+            </div>
+
             <label>タイトル <span style="color:var(--status-dropped)">*</span></label>
-            <input type="text" id="new-title" placeholder="本のタイトルを入力">
-            <div class="flex">
-                <div style="flex:1">
-                    <label>開始日 (自動)</label>
-                    <input type="date" id="new-start-date">
-                </div>
-                <div style="flex:1">
-                    <label>読書日 (任意)</label>
-                    <input type="date" id="new-log-date">
+            <input type="text" id="new-title" placeholder="タイトルを入力">
+            
+            <div id="new-input-book">
+                <label>ページ数 (任意・進捗用)</label>
+                <input type="number" id="new-page" placeholder="例: 0">
+            </div>
+
+            <div id="new-input-audio" class="hidden">
+                <label>総再生時間 (必須)</label>
+                <div class="flex">
+                    <input type="number" id="new-total-h" placeholder="時間">
+                    <input type="number" id="new-total-m" placeholder="分">
                 </div>
             </div>
-            <label>読んだページ数</label>
-            <input type="number" id="new-page" placeholder="例: 0">
-            <label>読了日 (読み終わった場合)</label>
+
+            <div class="flex">
+                <div style="flex:1"><label>開始日</label><input type="date" id="new-start-date"></div>
+                <div style="flex:1"><label>本日読んだ/聴いた日</label><input type="date" id="new-log-date"></div>
+            </div>
+            
+            <label>読了日 (既に終わっている場合)</label>
             <input type="date" id="new-finish-date">
+            
             <label>メモ</label>
-            <textarea id="new-memo" placeholder="意気込みや感想など"></textarea>
+            <textarea id="new-memo" placeholder="意気込みなど"></textarea>
+            
             <button onclick="addNewBook()">追加する</button>
         </div>
 
         <div id="section-log-reading" class="card hidden">
             <h3>進捗を記録</h3>
-            <p class="text-small" style="margin-bottom:10px">読書中または未読の本のみ表示されます</p>
+            <p class="text-small">読書中・未読のみ表示</p>
+            
             <label>本を選択</label>
-            <select id="log-book-select" onchange="updateCurrentPageDisplay()"></select>
-            <p id="current-page-display" style="color:var(--primary-color); font-weight:bold; font-size:12px; margin-top:5px;">現在: - ページ</p>
-            <div class="flex">
-                <div style="flex:1">
-                    <label>日付</label>
-                    <input type="date" id="log-date">
+            <select id="log-book-select" onchange="updateLogInputMode()"></select>
+            
+            <p id="current-progress-display" style="color:var(--primary-color); font-weight:bold; font-size:12px; margin-top:5px; margin-bottom:15px;">
+                現在: -
+            </p>
+
+            <div id="log-input-container">
                 </div>
-                <div style="flex:1">
-                    <label>ページ数</label>
-                    <input type="number" id="log-page">
-                </div>
-            </div>
+
+            <label>日付</label>
+            <input type="date" id="log-date">
+            
             <label>メモ</label>
-            <textarea id="log-memo" placeholder="気になったこと、感想"></textarea>
+            <textarea id="log-memo" placeholder="感想など"></textarea>
+            
             <button onclick="addLog()">記録を保存</button>
             <div class="flex" style="margin-top:15px;">
                 <button class="secondary" onclick="finishBookFromLog()">読了にする</button>
@@ -376,20 +352,28 @@
 
         <div id="section-change-status" class="card hidden">
             <h3>検索・編集</h3>
-            <input type="text" id="status-search" placeholder="タイトルで検索..." onkeyup="renderStatusList()">
+            <input type="text" id="status-search" placeholder="タイトル検索..." onkeyup="renderStatusList()">
             <div id="status-book-list" style="margin-top:10px;"></div>
         </div>
     </div>
 
     <div id="tab-bookshelf" class="page">
         <h2>本棚</h2>
-        <div style="overflow-x:auto; white-space:nowrap; padding-bottom:10px; margin-bottom:10px;" class="flex">
-            <button id="filter-reading" class="filter-btn active" onclick="renderBookshelf('reading')">読書中</button>
-            <button id="filter-all" class="filter-btn" onclick="renderBookshelf('all')">すべて</button>
-            <button id="filter-unread" class="filter-btn" onclick="renderBookshelf('unread')">未読</button>
-            <button id="filter-completed" class="filter-btn" onclick="renderBookshelf('completed')">読了</button>
-            <button id="filter-dropped" class="filter-btn" onclick="renderBookshelf('dropped')">離脱</button>
+        
+        <div class="filter-group">
+            <button id="filter-type-all" class="filter-btn active" onclick="setBookshelfTypeFilter('all')">全形式</button>
+            <button id="filter-type-book" class="filter-btn" onclick="setBookshelfTypeFilter('book')">📖 読む</button>
+            <button id="filter-type-audio" class="filter-btn" onclick="setBookshelfTypeFilter('audio')">🎧 聴く</button>
         </div>
+
+        <div class="filter-group">
+            <button id="filter-status-reading" class="filter-btn active" onclick="setBookshelfStatusFilter('reading')">読書中</button>
+            <button id="filter-status-all" class="filter-btn" onclick="setBookshelfStatusFilter('all')">すべて</button>
+            <button id="filter-status-unread" class="filter-btn" onclick="setBookshelfStatusFilter('unread')">未読</button>
+            <button id="filter-status-completed" class="filter-btn" onclick="setBookshelfStatusFilter('completed')">読了</button>
+            <button id="filter-status-dropped" class="filter-btn" onclick="setBookshelfStatusFilter('dropped')">離脱</button>
+        </div>
+
         <div id="bookshelf-list" class="card" style="min-height:200px"></div>
     </div>
 
@@ -400,6 +384,10 @@
             <input type="hidden" id="edit-id">
             <label>タイトル</label>
             <input type="text" id="edit-title">
+            
+            <label>形式 (変更不可)</label>
+            <div id="edit-type-display" style="padding:10px; background:var(--input-bg); border-radius:8px; color:var(--text-sub);"></div>
+
             <label>ステータス</label>
             <select id="edit-status">
                 <option value="unread">未読</option>
@@ -407,22 +395,20 @@
                 <option value="completed">読了</option>
                 <option value="dropped">離脱中</option>
             </select>
+
             <div class="flex">
-                <div style="flex:1">
-                    <label>開始日</label>
-                    <input type="date" id="edit-start-date">
-                </div>
-                <div style="flex:1">
-                    <label>終了日</label>
-                    <input type="date" id="edit-finish-date">
-                </div>
+                <div style="flex:1"><label>開始日</label><input type="date" id="edit-start-date"></div>
+                <div style="flex:1"><label>終了日</label><input type="date" id="edit-finish-date"></div>
             </div>
-            <label>最新の到達ページ (記録を追加)</label>
-            <input type="number" id="edit-current-page">
-            <h3 style="margin-top:20px;">読書メモ履歴</h3>
-            <div id="edit-memo-history" class="memo-history"></div>
-            <button onclick="saveEdit()" style="margin-top:20px;">変更を保存</button>
-            <button class="danger" onclick="deleteBook()">削除する</button>
+
+            <label id="edit-current-label">最新の進捗</label>
+            <input type="number" id="edit-current-value">
+            
+            <h3 style="margin-top:20px;">履歴</h3>
+            <div id="edit-memo-history" class="memo-history" style="background:var(--input-bg); padding:10px; border-radius:8px; max-height:150px; overflow-y:auto;"></div>
+            
+            <button onclick="saveEdit()" style="margin-top:20px;">保存</button>
+            <button class="danger" onclick="deleteBook()">削除</button>
         </div>
     </div>
 
@@ -440,41 +426,64 @@
 
     <div id="tab-stats" class="page">
         <h2>統計データ</h2>
+        
         <div class="card">
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                <div>
-                    <h3 style="font-size:0.8rem; margin-bottom:0;">読了冊数</h3>
-                    <span id="stat-total-completed" style="font-size:1.5rem; font-weight:bold; color:var(--primary-color);">0</span> 冊
+            <h3>全体</h3>
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <span id="stat-total-completed" class="stat-val">0</span> <span class="stat-unit">冊 (読了)</span>
                 </div>
-                <div>
-                    <h3 style="font-size:0.8rem; margin-bottom:0;">累計ページ</h3>
-                    <span id="stat-total-pages" style="font-size:1.5rem; font-weight:bold; color:var(--text-main);">0</span> p
-                </div>
-                <div>
-                    <h3 style="font-size:0.8rem; margin-bottom:0;">1日平均</h3>
-                    <span id="stat-avg-daily-page" style="font-size:1.2rem; font-weight:bold;">0</span> p
-                </div>
-                <div>
-                    <h3 style="font-size:0.8rem; margin-bottom:0;">1冊平均</h3>
-                    <span id="stat-avg-days-book" style="font-size:1.2rem; font-weight:bold;">0</span> 日
+                <div class="stat-item">
+                    <span id="stat-avg-days-book" class="stat-val">0</span> <span class="stat-unit">日/冊 (平均)</span>
                 </div>
             </div>
         </div>
+
         <div class="card">
-            <h3>月別読了数</h3>
-            <canvas id="chart-monthly-books-completed"></canvas>
+            <h3>📖 読む (ページ)</h3>
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <span id="stat-total-pages" class="stat-val" style="color:var(--primary-color)">0</span> <span class="stat-unit">p (累計)</span>
+                </div>
+                <div class="stat-item">
+                    <span id="stat-avg-daily-page" class="stat-val" style="color:var(--primary-color)">0</span> <span class="stat-unit">p/日 (平均)</span>
+                </div>
+            </div>
         </div>
+
         <div class="card">
-            <h3>日別ページ数 (直近7日)</h3>
+            <h3>🎧 聴く (時間)</h3>
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <span id="stat-total-time" class="stat-val" style="color:var(--accent-color)">0</span> <span class="stat-unit">時間 (累計)</span>
+                </div>
+                <div class="stat-item">
+                    <span id="stat-avg-daily-time" class="stat-val" style="color:var(--accent-color)">0</span> <span class="stat-unit">分/日 (平均)</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>月別読了数 (合算)</h3>
+            <canvas id="chart-monthly-completed"></canvas>
+        </div>
+
+        <div class="card">
+            <h3>📖 日別 ページ数 (直近7日)</h3>
             <canvas id="chart-daily-pages"></canvas>
         </div>
+
         <div class="card">
-            <h3>週別ページ数推移</h3>
-            <canvas id="chart-weekly-pages"></canvas>
+            <h3>🎧 日別 再生時間 (直近7日)</h3>
+            <canvas id="chart-daily-time"></canvas>
         </div>
         <div class="card">
-            <h3>月別ページ数推移</h3>
-            <canvas id="chart-monthly-pages"></canvas>
+            <h3>🎧 週別 再生時間</h3>
+            <canvas id="chart-weekly-time"></canvas>
+        </div>
+        <div class="card">
+            <h3>🎧 月別 再生時間</h3>
+            <canvas id="chart-monthly-time"></canvas>
         </div>
     </div>
 
@@ -486,206 +495,273 @@
     </div>
 
     <script>
-        // --- Data & Initialization ---
+        // --- Data & Init ---
+        // Book Structure: { id, title, type:'book'|'audio', status, startDate, finishDate, totalMinutes(audio only), logs:[{date, value, memo}] }
         let books = JSON.parse(localStorage.getItem('readingApp_books')) || [];
         let currentCalendarDate = new Date();
+        let newBookType = 'book';
+        let bookshelfTypeFilter = 'all';
+        let bookshelfStatusFilter = 'reading';
 
-        const colorPalette = [
-            '#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', 
-            '#93c5fd', '#c4b5fd', '#f0abfc', '#f9a8d4', '#cbd5e1'
-        ];
-        
-        function getBookColor(id) {
-            return colorPalette[id % colorPalette.length];
-        }
-
-        function saveData() {
-            localStorage.setItem('readingApp_books', JSON.stringify(books));
-        }
+        const colorPalette = ['#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f0abfc'];
+        function getBookColor(id) { return colorPalette[id % colorPalette.length]; }
+        function saveData() { localStorage.setItem('readingApp_books', JSON.stringify(books)); }
 
         Chart.defaults.color = '#94a3b8';
         Chart.defaults.borderColor = '#334155';
-        Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
 
-        // --- Tab Logic ---
+        // --- Tabs ---
         function switchTab(tabName) {
             document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
             document.getElementById(`tab-${tabName}`).classList.add('active');
-            
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             const map = { record:0, bookshelf:1, calendar:2, stats:3 };
-            if(map[tabName] !== undefined) document.querySelectorAll('.nav-item')[map[tabName]].classList.add('active');
-
-            if(tabName === 'record') resetRecordForms();
-            if(tabName === 'bookshelf') renderBookshelf('reading'); // Default to reading
-            if(tabName === 'calendar') renderCalendar();
-            if(tabName === 'stats') renderStats();
+            if(map[tabName]!==undefined) document.querySelectorAll('.nav-item')[map[tabName]].classList.add('active');
             
+            if(tabName==='record') resetRecordForms();
+            if(tabName==='bookshelf') renderBookshelf();
+            if(tabName==='calendar') renderCalendar();
+            if(tabName==='stats') renderStats();
             window.scrollTo(0,0);
         }
 
         // --- Record Logic ---
         function showRecordSection(section) {
-            ['add-new','log-reading','change-status'].forEach(s => {
-                document.getElementById(`section-${s}`).classList.add('hidden');
-            });
+            ['add-new','log-reading','change-status'].forEach(s=>document.getElementById(`section-${s}`).classList.add('hidden'));
             document.getElementById(`section-${section}`).classList.remove('hidden');
-            if(section === 'log-reading') populateLogSelect();
-            if(section === 'change-status') renderStatusList();
+            if(section==='log-reading') populateLogSelect();
+            if(section==='change-status') renderStatusList();
         }
 
         function resetRecordForms() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('new-log-date').value = today;
             document.getElementById('log-date').value = today;
+            setNewBookType('book');
         }
 
-        // --- Core Data Functions ---
+        function setNewBookType(type) {
+            newBookType = type;
+            document.getElementById('type-opt-book').classList.toggle('active', type==='book');
+            document.getElementById('type-opt-audio').classList.toggle('active', type==='audio');
+            if(type==='book') {
+                document.getElementById('new-input-book').classList.remove('hidden');
+                document.getElementById('new-input-audio').classList.add('hidden');
+            } else {
+                document.getElementById('new-input-book').classList.add('hidden');
+                document.getElementById('new-input-audio').classList.remove('hidden');
+            }
+        }
+
         function addNewBook() {
             const title = document.getElementById('new-title').value;
             if(!title) return alert("タイトルを入力してください");
-            
+
             const startDate = document.getElementById('new-start-date').value;
             const logDate = document.getElementById('new-log-date').value;
-            const page = parseInt(document.getElementById('new-page').value) || 0;
             const finishDate = document.getElementById('new-finish-date').value;
             const memo = document.getElementById('new-memo').value;
+
+            let totalMinutes = 0;
+            let initialValue = 0; // Page or Minutes read
+
+            if(newBookType === 'audio') {
+                const h = parseInt(document.getElementById('new-total-h').value) || 0;
+                const m = parseInt(document.getElementById('new-total-m').value) || 0;
+                totalMinutes = h * 60 + m;
+                if(totalMinutes <= 0) return alert("総再生時間を入力してください");
+                // For audio, initial value is implied 0 unless logged later
+            } else {
+                initialValue = parseInt(document.getElementById('new-page').value) || 0;
+            }
 
             const newBook = {
                 id: Date.now(),
                 title: title,
+                type: newBookType,
                 status: 'unread',
                 startDate: startDate || '',
                 finishDate: finishDate || '',
+                totalMinutes: totalMinutes, // Only relevant for audio
                 logs: []
             };
 
-            if(logDate || page > 0) {
-                if(!newBook.startDate && logDate) newBook.startDate = logDate;
+            // If initial value logged (Page or Started Audio)
+            // For Audio in Add New: we don't have "Remaining" input UI, so assume 0 unless we add logic.
+            // Keeping it simple: Add book first, then log progress for audio if needed. 
+            // BUT if it is 'book' and page > 0, log it.
+            if(newBookType === 'book' && (initialValue > 0 || logDate)) {
                 newBook.status = 'reading';
+                if(!newBook.startDate && logDate) newBook.startDate = logDate;
                 if(finishDate) newBook.status = 'completed';
-                newBook.logs.push({ date: logDate || new Date().toISOString().split('T')[0], page: page, memo: memo });
-            }
+                newBook.logs.push({ date: logDate || new Date().toISOString().split('T')[0], value: initialValue, memo: memo });
+            } 
+            // If Audio and just adding, user can log progress in next step.
 
             books.push(newBook);
             saveData();
-            alert("「" + title + "」を追加しました");
+            alert(`「${title}」を追加しました`);
             
+            // Clean up
             document.getElementById('new-title').value = '';
             document.getElementById('new-page').value = '';
             document.getElementById('new-memo').value = '';
+            document.getElementById('new-total-h').value = '';
+            document.getElementById('new-total-m').value = '';
             showRecordSection('log-reading');
         }
 
-        function addLog() {
-            const bookId = document.getElementById('log-book-select').value;
-            if(!bookId) return alert("本を選択してください");
-            
-            const date = document.getElementById('log-date').value;
-            const page = parseInt(document.getElementById('log-page').value);
-            const memo = document.getElementById('log-memo').value;
-
-            if(!date || isNaN(page)) return alert("日付とページ数を入力してください");
-            
-            const book = books.find(b => b.id == bookId);
-            const lastPage = book.logs.length > 0 ? book.logs[book.logs.length-1].page : 0;
-            
-            if(page < lastPage) return alert(`ページ数が減っています（現在: ${lastPage}p）`);
-
-            if(book.status === 'unread') {
-                book.status = 'reading';
-                if(!book.startDate) book.startDate = date;
-            }
-
-            book.logs.push({ date, page, memo });
-            book.logs.sort((a,b) => new Date(a.date) - new Date(b.date));
-            saveData();
-            alert("記録しました");
-            document.getElementById('log-memo').value = '';
-            document.getElementById('log-page').value = '';
-            updateCurrentPageDisplay();
-        }
-
+        // --- Log Reading Logic ---
         function populateLogSelect() {
             const select = document.getElementById('log-book-select');
             select.innerHTML = '<option value="">選択してください</option>';
-            const targets = books.filter(b => b.status === 'unread' || b.status === 'reading');
-            targets.forEach(b => {
+            books.filter(b => b.status === 'unread' || b.status === 'reading').forEach(b => {
                 const opt = document.createElement('option');
                 opt.value = b.id;
-                opt.textContent = b.title;
+                opt.textContent = `${b.type==='audio'?'🎧':'📖'} ${b.title}`;
                 select.appendChild(opt);
             });
+            updateLogInputMode();
         }
 
-        function updateCurrentPageDisplay() {
+        function updateLogInputMode() {
             const id = document.getElementById('log-book-select').value;
-            const disp = document.getElementById('current-page-display');
-            if(!id) { disp.innerText = "現在: - ページ"; return; }
+            const container = document.getElementById('log-input-container');
+            const disp = document.getElementById('current-progress-display');
+            container.innerHTML = '';
+            
+            if(!id) { disp.innerText = "現在: -"; return; }
+            
             const b = books.find(x => x.id == id);
-            const p = b.logs.length ? b.logs[b.logs.length-1].page : 0;
-            disp.innerText = `現在: ${p} ページ`;
+            const lastVal = b.logs.length ? b.logs[b.logs.length-1].value : 0;
+
+            if(b.type === 'book') {
+                disp.innerText = `現在: ${lastVal} ページ`;
+                container.innerHTML = `
+                    <div class="flex">
+                        <div style="flex:1"><label>読んだページ数 (累積)</label><input type="number" id="log-val-page" placeholder="例: 120"></div>
+                    </div>`;
+            } else {
+                // Audio
+                const doneM = lastVal;
+                const doneH = Math.floor(doneM / 60);
+                const doneMin = doneM % 60;
+                
+                // Calculate remaining for hint
+                const remainM = b.totalMinutes - doneM;
+                const remH = Math.floor(remainM / 60);
+                const remMin = remainM % 60;
+
+                disp.innerText = `現在: ${doneH}時間${doneMin}分 再生済 (残り約 ${remH}時間${remMin}分)`;
+                
+                container.innerHTML = `
+                    <label>アプリ上の「残り時間」を入力</label>
+                    <div class="flex">
+                        <div style="flex:1"><input type="number" id="log-rem-h" placeholder="残り時間"></div>
+                        <div style="flex:1"><input type="number" id="log-rem-m" placeholder="残り分"></div>
+                    </div>`;
+            }
         }
-        
+
+        function addLog() {
+            const id = document.getElementById('log-book-select').value;
+            if(!id) return alert("本を選択してください");
+            
+            const date = document.getElementById('log-date').value;
+            const memo = document.getElementById('log-memo').value;
+            const b = books.find(x => x.id == id);
+
+            let newValue = 0;
+
+            if(b.type === 'book') {
+                newValue = parseInt(document.getElementById('log-val-page').value);
+                if(isNaN(newValue)) return alert("ページ数を入力してください");
+                const lastVal = b.logs.length ? b.logs[b.logs.length-1].value : 0;
+                if(newValue < lastVal) return alert("ページ数が減っています");
+            } else {
+                // Audio: Calculate progress from Remaining Time
+                const h = parseInt(document.getElementById('log-rem-h').value) || 0;
+                const m = parseInt(document.getElementById('log-rem-m').value) || 0;
+                const remainMinutes = h * 60 + m;
+                
+                // Logic: Done = Total - Remain
+                newValue = b.totalMinutes - remainMinutes;
+                
+                if(newValue < 0) newValue = 0; // Should not happen unless Total is wrong
+                if(newValue > b.totalMinutes) newValue = b.totalMinutes; // Cap at max
+                
+                const lastVal = b.logs.length ? b.logs[b.logs.length-1].value : 0;
+                // Allow correction but warn? For now assume valid input.
+            }
+
+            if(b.status === 'unread') {
+                b.status = 'reading';
+                if(!b.startDate) b.startDate = date;
+            }
+
+            b.logs.push({ date, value: newValue, memo });
+            b.logs.sort((x,y) => new Date(x.date) - new Date(y.date));
+            saveData();
+            alert("記録しました");
+            document.getElementById('log-memo').value = '';
+            updateLogInputMode();
+        }
+
         function finishBookFromLog() {
             const id = document.getElementById('log-book-select').value;
-            if(!id) return alert("本を選択してください");
-            const date = document.getElementById('log-date').value || new Date().toISOString().split('T')[0];
+            if(!id) return;
             const b = books.find(x => x.id == id);
             b.status = 'completed';
-            b.finishDate = date;
+            b.finishDate = document.getElementById('log-date').value || new Date().toISOString().split('T')[0];
+            // If Audio, set progress to total
+            if(b.type === 'audio') {
+                b.logs.push({date: b.finishDate, value: b.totalMinutes, memo: '読了'});
+            }
             saveData();
-            alert("読了に設定しました！");
+            alert("読了にしました");
             populateLogSelect();
         }
-        
+
         function dropBookFromLog() {
             const id = document.getElementById('log-book-select').value;
-            if(!id) return alert("本を選択してください");
-            const b = books.find(x => x.id == id);
-            b.status = 'dropped';
+            if(!id) return;
+            books.find(x => x.id == id).status = 'dropped';
             saveData();
-            alert("離脱に設定しました");
+            alert("離脱にしました");
             populateLogSelect();
         }
 
-        // --- Lists & Search ---
-        function renderStatusList() {
-            const list = document.getElementById('status-book-list');
-            const q = document.getElementById('status-search').value.toLowerCase();
-            list.innerHTML = '';
-            const hits = books.filter(b => b.title.toLowerCase().includes(q));
-            hits.forEach(b => {
-                const item = document.createElement('div');
-                item.className = 'book-item';
-                item.innerHTML = `
-                    <div class="book-info">
-                        <span class="book-title">${b.title} <span class="status-badge status-${b.status}">${getStatusLabel(b.status)}</span></span>
-                    </div>
-                    <button class="secondary" style="width:auto; margin:0; padding:6px 12px; font-size:12px;" onclick="openEditScreen(${b.id})">編集</button>
-                `;
-                list.appendChild(item);
+        // --- Bookshelf & Filters ---
+        function setBookshelfTypeFilter(t) {
+            bookshelfTypeFilter = t;
+            ['all','book','audio'].forEach(k => {
+                document.getElementById(`filter-type-${k}`).classList.toggle('active', k===t);
             });
+            renderBookshelf();
         }
 
-        // --- Bookshelf Render (with UI Active State) ---
-        function renderBookshelf(filter) {
-            // 1. UI Active State
-            const ids = ['filter-reading', 'filter-all', 'filter-unread', 'filter-completed', 'filter-dropped'];
-            ids.forEach(id => {
-                const el = document.getElementById(id);
-                if(id === `filter-${filter}`) {
-                    el.classList.add('active');
-                } else {
-                    el.classList.remove('active');
-                }
+        function setBookshelfStatusFilter(s) {
+            bookshelfStatusFilter = s;
+            ['reading','all','unread','completed','dropped'].forEach(k => {
+                document.getElementById(`filter-status-${k}`).classList.toggle('active', k===s);
             });
+            renderBookshelf();
+        }
 
-            // 2. Render List
+        function renderBookshelf() {
             const list = document.getElementById('bookshelf-list');
             list.innerHTML = '';
-            let targets = (filter === 'all') ? books : books.filter(b => b.status === filter);
             
+            let targets = books;
+            // Apply Status Filter
+            if(bookshelfStatusFilter !== 'all') {
+                targets = targets.filter(b => b.status === bookshelfStatusFilter);
+            }
+            // Apply Type Filter
+            if(bookshelfTypeFilter !== 'all') {
+                targets = targets.filter(b => b.type === bookshelfTypeFilter);
+            }
+
             if(targets.length === 0) {
                 list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-sub);">本がありません</div>';
                 return;
@@ -694,10 +770,32 @@
             targets.forEach(b => {
                 const item = document.createElement('div');
                 item.className = 'book-item';
+                
+                const typeIcon = b.type==='audio' ? '🎧' : '📖';
+                const statusLabel = { unread:'未読', reading:'読書中', completed:'読了', dropped:'離脱' }[b.status];
+                
+                // Progress Text
+                let progText = "";
+                const lastVal = b.logs.length ? b.logs[b.logs.length-1].value : 0;
+                if(b.type === 'book') {
+                    progText = `${lastVal} p`;
+                } else {
+                    const h = Math.floor(lastVal/60);
+                    const m = lastVal%60;
+                    progText = `${h}時間${m}分`;
+                }
+
                 item.innerHTML = `
                     <div class="book-info">
-                        <span class="book-title">${b.title} <span class="status-badge status-${b.status}">${getStatusLabel(b.status)}</span></span>
-                        <div class="text-small">開始: ${b.startDate||'-'} / 終了: ${b.finishDate||'-'}</div>
+                        <span class="book-title">
+                            <span class="type-badge">${typeIcon}</span>
+                            ${b.title} 
+                            <span class="status-badge status-${b.status}">${statusLabel}</span>
+                        </span>
+                        <div class="text-small">
+                            進捗: ${progText} <br>
+                            期間: ${b.startDate||'-'} ~ ${b.finishDate||'-'}
+                        </div>
                     </div>
                     <button class="secondary" style="width:auto; margin:0;" onclick="openEditScreen(${b.id})">詳細</button>
                 `;
@@ -705,9 +803,22 @@
             });
         }
 
-        function getStatusLabel(s) {
-            const map = { unread:'未読', reading:'読書中', completed:'読了', dropped:'離脱' };
-            return map[s] || s;
+        function renderStatusList() {
+            const list = document.getElementById('status-book-list');
+            const q = document.getElementById('status-search').value.toLowerCase();
+            list.innerHTML = '';
+            books.filter(b => b.title.toLowerCase().includes(q)).forEach(b => {
+                const item = document.createElement('div');
+                item.className = 'book-item';
+                const typeIcon = b.type==='audio' ? '🎧' : '📖';
+                item.innerHTML = `
+                    <div class="book-info">
+                        <span class="book-title"><span class="type-badge">${typeIcon}</span> ${b.title}</span>
+                    </div>
+                    <button class="secondary" style="width:auto; padding:6px 12px; font-size:12px; margin:0;" onclick="openEditScreen(${b.id})">編集</button>
+                `;
+                list.appendChild(item);
+            });
         }
 
         // --- Edit Screen ---
@@ -720,15 +831,19 @@
             document.getElementById('edit-start-date').value = b.startDate;
             document.getElementById('edit-finish-date').value = b.finishDate;
             
-            const currP = b.logs.length ? b.logs[b.logs.length-1].page : 0;
-            document.getElementById('edit-current-page').value = currP;
+            document.getElementById('edit-type-display').innerText = b.type==='audio' ? '🎧 オーディオブック' : '📖 書籍';
+            document.getElementById('edit-current-label').innerText = b.type==='audio' ? '最新の再生済時間(分)' : '最新の到達ページ';
+            
+            const lastVal = b.logs.length ? b.logs[b.logs.length-1].value : 0;
+            document.getElementById('edit-current-value').value = lastVal;
 
             const hist = document.getElementById('edit-memo-history');
             hist.innerHTML = '';
             [...b.logs].sort((x,y) => new Date(y.date)-new Date(x.date)).forEach(l => {
                 const d = document.createElement('div');
                 d.className = 'memo-item';
-                d.innerHTML = `<span style="color:var(--primary-color); font-weight:bold;">${l.date}</span> (${l.page}p) ${l.memo ? '<br>'+l.memo : ''}`;
+                const valStr = b.type==='audio' ? `${l.value}分` : `${l.value}p`;
+                d.innerHTML = `<span style="color:var(--primary-color); font-weight:bold;">${l.date}</span> (${valStr}) ${l.memo ? '<br>'+l.memo : ''}`;
                 hist.appendChild(d);
             });
 
@@ -749,10 +864,10 @@
             b.startDate = document.getElementById('edit-start-date').value;
             b.finishDate = document.getElementById('edit-finish-date').value;
             
-            const inpP = parseInt(document.getElementById('edit-current-page').value);
+            const inpVal = parseInt(document.getElementById('edit-current-value').value);
             const lastLog = b.logs.length ? b.logs[b.logs.length-1] : null;
-            if(!lastLog || lastLog.page !== inpP) {
-                b.logs.push({ date: new Date().toISOString().split('T')[0], page: inpP, memo: '編集画面更新' });
+            if(!lastLog || lastLog.value !== inpVal) {
+                b.logs.push({ date: new Date().toISOString().split('T')[0], value: inpVal, memo: '編集画面更新' });
                 b.logs.sort((x,y) => new Date(x.date)-new Date(y.date));
             }
             saveData();
@@ -761,213 +876,224 @@
         }
 
         function deleteBook() {
-            if(!confirm("本当に削除しますか？")) return;
+            if(!confirm("削除しますか？")) return;
             const id = document.getElementById('edit-id').value;
             books = books.filter(b => b.id != id);
             saveData();
             closeEditScreen();
         }
 
-        // --- Calendar Logic (Fixed & Continuous) ---
+        // --- Calendar (unchanged logic) ---
         function changeMonth(offset) {
             currentCalendarDate.setMonth(currentCalendarDate.getMonth() + offset);
             renderCalendar();
         }
-
         function renderCalendar() {
             const year = currentCalendarDate.getFullYear();
             const month = currentCalendarDate.getMonth();
             document.getElementById('calendar-title').innerText = `${year}年 ${month+1}月`;
-            
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
-
             ['日','月','火','水','木','金','土'].forEach(d => {
-                const div = document.createElement('div');
-                div.className = 'calendar-day-header';
-                div.innerText = d;
-                grid.appendChild(div);
+                const div = document.createElement('div'); div.className='calendar-day-header'; div.innerText=d; grid.appendChild(div);
             });
+            const first = new Date(year, month, 1);
+            const last = new Date(year, month+1, 0);
+            const startIdx = first.getDay();
+            const total = last.getDate();
+            
+            let days = [];
+            for(let i=0; i<startIdx; i++) days.push(null);
+            for(let i=1; i<=total; i++) days.push(new Date(year, month, i));
 
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month+1, 0);
-            const startDayIdx = firstDay.getDay(); 
-            const totalDays = lastDay.getDate();
-
-            let daysArray = [];
-            for(let i=0; i<startDayIdx; i++) daysArray.push(null);
-            for(let i=1; i<=totalDays; i++) daysArray.push(new Date(year, month, i));
-
-            for(let i=0; i<daysArray.length; i+=7) {
-                const weekDays = daysArray.slice(i, i+7);
-                let activeBooksInWeek = new Set();
-                let weekStart = null;
-
-                weekDays.forEach(d => {
+            for(let i=0; i<days.length; i+=7) {
+                const week = days.slice(i, i+7);
+                let activeSet = new Set();
+                week.forEach(d => {
                     if(d) {
-                        if(!weekStart) weekStart = d;
                         books.forEach(b => {
-                            if(b.status === 'dropped' || !b.startDate) return;
+                            if(b.status==='dropped' || !b.startDate) return;
                             const s = new Date(b.startDate); s.setHours(0,0,0,0);
                             let e = b.finishDate ? new Date(b.finishDate) : new Date(); e.setHours(0,0,0,0);
-                            const curr = d; curr.setHours(0,0,0,0);
-                            if(curr >= s && curr <= e) activeBooksInWeek.add(b);
+                            const c = d; c.setHours(0,0,0,0);
+                            if(c >= s && c <= e) activeSet.add(b);
                         });
                     }
                 });
-
-                const sortedWeekBooks = Array.from(activeBooksInWeek).sort((a,b) => {
-                    const sa = new Date(a.startDate);
-                    const sb = new Date(b.startDate);
-                    return sa - sb || a.id - b.id; 
-                });
-
-                const bookSlotMap = {};
-                sortedWeekBooks.forEach((b, idx) => bookSlotMap[b.id] = idx);
+                const sorted = Array.from(activeSet).sort((a,b) => (new Date(a.startDate)-new Date(b.startDate)) || (a.id-b.id));
+                const slotMap = {};
+                sorted.forEach((b, idx) => slotMap[b.id] = idx);
 
                 for(let j=0; j<7; j++) {
-                    const cellDate = weekDays[j];
-                    const cell = document.createElement('div');
-                    cell.className = 'calendar-cell';
-                    
-                    if(!cellDate) {
-                        cell.style.background = 'transparent';
-                    } else {
+                    const d = week[j];
+                    const cell = document.createElement('div'); cell.className='calendar-cell';
+                    if(d) {
                         const todayStr = new Date().toISOString().split('T')[0];
-                        const dateStr = cellDate.toISOString().split('T')[0];
-                        if(dateStr === todayStr) cell.classList.add('today');
+                        if(d.toISOString().split('T')[0] === todayStr) cell.classList.add('today');
+                        cell.innerHTML = `<span class="day-number">${d.getDate()}</span>`;
                         
-                        cell.innerHTML = `<span class="day-number">${cellDate.getDate()}</span>`;
-                        
-                        const dayStart = new Date(cellDate); dayStart.setHours(0,0,0,0);
-                        const todaysBooks = sortedWeekBooks.filter(b => {
+                        const dayStart = new Date(d); dayStart.setHours(0,0,0,0);
+                        sorted.filter(b => {
                             const s = new Date(b.startDate); s.setHours(0,0,0,0);
                             let e = b.finishDate ? new Date(b.finishDate) : new Date(); e.setHours(0,0,0,0);
                             return dayStart >= s && dayStart <= e;
-                        });
-
-                        todaysBooks.forEach(b => {
-                            const slotIndex = bookSlotMap[b.id];
-                            const topPos = 20 + (slotIndex * 18);
-                            
+                        }).forEach(b => {
+                            const slot = slotMap[b.id];
+                            const top = 20 + (slot*18);
                             const bar = document.createElement('div');
                             bar.className = 'event-bar';
-                            bar.style.top = `${topPos}px`;
+                            bar.style.top = `${top}px`;
                             bar.style.backgroundColor = getBookColor(b.id);
                             
                             const s = new Date(b.startDate); s.setHours(0,0,0,0);
                             let e = b.finishDate ? new Date(b.finishDate) : new Date(); e.setHours(0,0,0,0);
-
-                            if(j===0 || dayStart.getTime() === s.getTime()) {
-                                bar.innerText = b.title;
-                            } else {
-                                bar.innerHTML = '&nbsp;';
-                            }
-
-                            // CONTINUITY LOGIC:
-                            // Only round corners on the actual Start and End dates of the book.
-                            // Middle days get 0 radius and 0 margin (handled by CSS default).
                             
-                            if(dayStart.getTime() === s.getTime()) {
-                                bar.style.borderTopLeftRadius = '4px';
-                                bar.style.borderBottomLeftRadius = '4px';
-                                bar.style.marginLeft = '2px';
-                                bar.style.width = 'calc(100% - 2px)';
-                            }
-                            if(dayStart.getTime() === e.getTime()) {
-                                bar.style.borderTopRightRadius = '4px';
-                                bar.style.borderBottomRightRadius = '4px';
-                                bar.style.marginRight = '2px';
-                                // Adjust width if it was also a start date
-                                if(dayStart.getTime() === s.getTime()) {
-                                    bar.style.width = 'calc(100% - 4px)';
-                                } else {
-                                    bar.style.width = 'calc(100% - 2px)';
-                                }
-                            }
+                            if(j===0 || dayStart.getTime()===s.getTime()) {
+                                const icon = b.type==='audio' ? '🎧 ' : '';
+                                bar.innerText = icon + b.title;
+                            } else { bar.innerHTML='&nbsp;'; }
 
+                            if(dayStart.getTime()===s.getTime()) {
+                                bar.style.borderTopLeftRadius='4px'; bar.style.borderBottomLeftRadius='4px';
+                                bar.style.marginLeft='2px'; bar.style.width='calc(100% - 2px)';
+                            }
+                            if(dayStart.getTime()===e.getTime()) {
+                                bar.style.borderTopRightRadius='4px'; bar.style.borderBottomRightRadius='4px';
+                                bar.style.marginRight='2px';
+                                bar.style.width = (dayStart.getTime()===s.getTime()) ? 'calc(100% - 4px)' : 'calc(100% - 2px)';
+                            }
                             cell.appendChild(bar);
                         });
-                    }
+                    } else { cell.style.background='transparent'; }
                     grid.appendChild(cell);
                 }
             }
         }
 
-        // --- Statistics Logic (Charts) ---
+        // --- Stats Logic ---
         let charts = {};
-
         function renderStats() {
             const completed = books.filter(b => b.status === 'completed');
             
-            let totalP = 0;
-            books.forEach(b => { if(b.logs.length) totalP += Math.max(...b.logs.map(l=>l.page)); });
-            
-            let allDates = [];
-            books.forEach(b => b.logs.forEach(l => allDates.push(new Date(l.date))));
-            let avgDaily = 0;
-            if(allDates.length) {
-                const minD = new Date(Math.min.apply(null, allDates));
-                const diff = Math.max(1, Math.ceil((new Date()-minD)/86400000));
-                avgDaily = Math.round(totalP / diff);
-            }
-
-            let totalDaysBook = 0;
+            // 1. General (All types)
+            document.getElementById('stat-total-completed').innerText = completed.length;
+            let totalDays = 0;
             completed.forEach(b => {
                 const s = new Date(b.startDate); const e = new Date(b.finishDate);
-                totalDaysBook += Math.max(1, Math.ceil((e-s)/86400000)+1);
+                totalDays += Math.max(1, Math.ceil((e-s)/86400000)+1);
             });
-            const avgBook = completed.length ? Math.round(totalDaysBook/completed.length) : 0;
+            document.getElementById('stat-avg-days-book').innerText = completed.length ? Math.round(totalDays/completed.length) : 0;
 
-            document.getElementById('stat-total-completed').innerText = completed.length;
-            document.getElementById('stat-total-pages').innerText = totalP;
-            document.getElementById('stat-avg-daily-page').innerText = avgDaily;
-            document.getElementById('stat-avg-days-book').innerText = avgBook;
+            // 2. Books (Pages)
+            const bookOnly = books.filter(b => b.type === 'book');
+            let totalPages = 0;
+            let allBookDates = new Set();
+            bookOnly.forEach(b => {
+                if(b.logs.length) totalPages += Math.max(...b.logs.map(l=>l.value));
+                b.logs.forEach(l => allBookDates.add(l.date));
+            });
+            document.getElementById('stat-total-pages').innerText = totalPages;
+            
+            // Avg Daily Page (from first book log)
+            let avgDailyP = 0;
+            if(allBookDates.size > 0) {
+                 const minD = new Date(Math.min(...Array.from(allBookDates).map(d=>new Date(d))));
+                 const diff = Math.max(1, Math.ceil((new Date() - minD)/86400000));
+                 avgDailyP = Math.round(totalPages / diff);
+            }
+            document.getElementById('stat-avg-daily-page').innerText = avgDailyP;
 
-            let dailyMap = {};
-            books.forEach(b => {
+            // 3. Audio (Time)
+            const audioOnly = books.filter(b => b.type === 'audio');
+            let totalMins = 0;
+            let allAudioDates = new Set();
+            // Calculate actual listened minutes (delta)
+            let dailyTimeMap = {};
+            audioOnly.forEach(b => {
                 let sLogs = [...b.logs].sort((x,y) => new Date(x.date)-new Date(y.date));
                 sLogs.forEach((l,i) => {
-                    const prev = i>0 ? sLogs[i-1].page : 0;
-                    const d = l.page - prev;
-                    if(d>0) dailyMap[l.date] = (dailyMap[l.date]||0) + d;
+                    const prev = i>0 ? sLogs[i-1].value : 0;
+                    const d = l.value - prev;
+                    if(d>0) {
+                        totalMins += d;
+                        dailyTimeMap[l.date] = (dailyTimeMap[l.date]||0) + d;
+                        allAudioDates.add(l.date);
+                    }
                 });
             });
+            const totalH = (totalMins/60).toFixed(1);
+            document.getElementById('stat-total-time').innerText = totalH;
 
+            // Avg Daily Time
+            let avgDailyMin = 0;
+            if(allAudioDates.size > 0) {
+                const minD = new Date(Math.min(...Array.from(allAudioDates).map(d=>new Date(d))));
+                const diff = Math.max(1, Math.ceil((new Date() - minD)/86400000));
+                avgDailyMin = Math.round(totalMins / diff);
+            }
+            document.getElementById('stat-avg-daily-time').innerText = avgDailyMin;
+
+            // --- Charts Data Prep ---
+            // A. Monthly Completed (Mixed)
             const mComp = {};
             completed.forEach(b => {
                 if(b.finishDate) mComp[b.finishDate.slice(0,7)] = (mComp[b.finishDate.slice(0,7)]||0)+1;
             });
-            drawChart('chart-monthly-books-completed', 'line', mComp, '読了冊数', '#22c55e');
+            drawChart('chart-monthly-completed', 'line', mComp, '読了数', '#3b82f6');
 
-            const dailyLast7 = {};
-            for(let i=6; i>=0; i--) {
-                const d = new Date(); d.setDate(d.getDate()-i);
-                const k = d.toISOString().split('T')[0];
-                dailyLast7[k.slice(5)] = dailyMap[k]||0;
-            }
-            drawChartRaw('chart-daily-pages', 'bar', Object.keys(dailyLast7), Object.values(dailyLast7), 'ページ数', '#38bdf8');
+            // B. Daily Pages (Book Only) - Delta
+            let dailyPageMap = {};
+            bookOnly.forEach(b => {
+                let sLogs = [...b.logs].sort((x,y) => new Date(x.date)-new Date(y.date));
+                sLogs.forEach((l,i) => {
+                    const prev = i>0 ? sLogs[i-1].value : 0;
+                    const d = l.value - prev;
+                    if(d>0) dailyPageMap[l.date] = (dailyPageMap[l.date]||0) + d;
+                });
+            });
+            drawChartLast7('chart-daily-pages', dailyPageMap, 'ページ', '#38bdf8');
 
-            const weekMap = {};
-            Object.keys(dailyMap).sort().forEach(k => {
+            // C. Daily Time (Audio Only)
+            drawChartLast7('chart-daily-time', dailyTimeMap, '分', '#818cf8');
+
+            // D. Weekly Time (Audio Only)
+            const weeklyTime = {};
+            Object.keys(dailyTimeMap).sort().forEach(k => {
                 const d = new Date(k);
                 const day = d.getDay()||7; 
                 if(day!==1) d.setHours(-24*(day-1));
                 const wKey = d.toISOString().split('T')[0];
-                weekMap[wKey] = (weekMap[wKey]||0) + dailyMap[k];
+                weeklyTime[wKey] = (weeklyTime[wKey]||0) + dailyTimeMap[k];
             });
-            drawChart('chart-weekly-pages', 'line', weekMap, '週間ページ', '#818cf8');
+            // Convert to hours for chart
+            const weeklyTimeH = {};
+            Object.keys(weeklyTime).forEach(k => weeklyTimeH[k] = (weeklyTime[k]/60).toFixed(1));
+            drawChart('chart-weekly-time', 'line', weeklyTimeH, '時間', '#a78bfa');
 
-            const monthP = {};
-            Object.keys(dailyMap).forEach(k => {
-                monthP[k.slice(0,7)] = (monthP[k.slice(0,7)]||0) + dailyMap[k];
+            // E. Monthly Time (Audio Only)
+            const monthlyTime = {};
+            Object.keys(dailyTimeMap).forEach(k => {
+                const mKey = k.slice(0,7);
+                monthlyTime[mKey] = (monthlyTime[mKey]||0) + dailyTimeMap[k];
             });
-            drawChart('chart-monthly-pages', 'bar', monthP, '月間ページ', '#f472b6');
+            const monthlyTimeH = {};
+            Object.keys(monthlyTime).forEach(k => monthlyTimeH[k] = (monthlyTime[k]/60).toFixed(1));
+            drawChart('chart-monthly-time', 'bar', monthlyTimeH, '時間', '#f472b6');
+        }
+
+        function drawChartLast7(id, dataMap, label, color) {
+            const last7 = {};
+            for(let i=6; i>=0; i--) {
+                const d = new Date(); d.setDate(d.getDate()-i);
+                const k = d.toISOString().split('T')[0];
+                last7[k.slice(5)] = dataMap[k]||0;
+            }
+            drawChartRaw(id, 'bar', Object.keys(last7), Object.values(last7), label, color);
         }
 
         function drawChart(id, type, dataObj, label, color) {
             const keys = Object.keys(dataObj).sort();
-            const useKeys = keys.slice(-12);
+            const useKeys = keys.slice(-12); // Last 12 points
             const useVals = useKeys.map(k => dataObj[k]);
             drawChartRaw(id, type, useKeys, useVals, label, color);
         }
@@ -998,17 +1124,16 @@
                     }
                 }
             };
-            if(type==='line') config.data.datasets[0].backgroundColor = color+'20';
-            if(type==='line') config.data.datasets[0].fill = true;
-            
+            if(type==='line') {
+                config.data.datasets[0].backgroundColor = color+'20';
+                config.data.datasets[0].fill = true;
+            }
             charts[id] = new Chart(ctx, config);
         }
 
         // Init
         resetRecordForms();
-        populateLogSelect();
-        // Default Bookshelf view
-        renderBookshelf('reading');
+        renderBookshelf(); // Default view
     </script>
 </body>
 </html>
