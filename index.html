@@ -1231,9 +1231,43 @@
             charts[id] = new Chart(ctx, config);
         }
 
-        // --- Init App ---
-        // ここが変更されています: ローカルストレージからの単純読み出しではなく、初期化関数を呼ぶ
-        initApp();
+// --- 【緊急復旧用】initApp ---
+        async function initApp() {
+            toggleLoader(true, "スマホ内のデータを捜索中...");
+            const uid = getUserId();
+            
+            // 1. スマホ内(ローカルストレージ)のデータを強制的に読み込む
+            const localDataStr = localStorage.getItem('readingApp_books'); 
+            let localData = [];
+            try { localData = JSON.parse(localDataStr) || []; } catch(e){}
+
+            // 2. データがあるか判定
+            if (localData.length > 0) {
+                // データが見つかった場合
+                books = localData; // 記憶変数にセット
+                renderBookshelf(); // 画面に表示（これで本が見えるはずです！）
+                toggleLoader(false);
+
+                // 3. ユーザーに確認してサーバーへ送信
+                if(confirm(`スマホ内に【${books.length}冊】のデータが見つかりました！\n\nこれをスプレッドシートに保存して復旧しますか？`)) {
+                    await saveData(); // サーバーへ保存を実行
+                }
+            } else {
+                // データが見つからなかった場合
+                toggleLoader(false);
+                alert("スマホ内にデータが残っていないようです...\n(キャッシュが消去された可能性があります)");
+                
+                // 念のため通常通りサーバーを見に行く
+                try {
+                    const res = await fetch(`${API_URL}?uuid=${uid}`);
+                    const json = await res.json();
+                    if(json.status === 'success' && json.data) {
+                        books = json.data;
+                        renderBookshelf();
+                    }
+                } catch(e) {}
+            }
+        };
 
     </script>
 </body>
